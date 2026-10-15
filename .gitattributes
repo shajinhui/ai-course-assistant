@@ -1,0 +1,13 @@
+* text=auto
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.css text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+xxx.js linguist-generated=true
+xxx.user.js linguist-generated=true
+preview/index.html linguist-generated=true

@@ -1,0 +1,59 @@
+name: Build and release userscript
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm test
+      - run: pnpm run package
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ai-course-assistant
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: node tools/package.mjs --tag "$GITHUB_REF_NAME"
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          dist/ai-course-assistant.user.js
+          dist/ai-course-assistant.meta.js
+          dist/SHA256SUMS
+          --verify-tag --generate-notes --title "$GITHUB_REF_NAME"

@@ -1,0 +1,61 @@
+// ==UserScript==
+// @name         棚子网课助手｜自定义 OpenAI 兼容 API｜AI聊天｜AI搜题
+// @version      2.44.0
+// @homepageURL  https://github.com/shajinhui/ai-course-assistant
+// @supportURL   https://github.com/shajinhui/ai-course-assistant/issues
+// @updateURL    https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.meta.js
+// @downloadURL  https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.user.js
+// @description  用户自定义 API 地址、Key 和模型，聊天、搜题与自动答题仅使用 AI，保留原有网课辅助功能。界面为石墨灰极简配色，设置项按常用与高级分组。
+// @author       棚子
+// @note         会员单：@小李 @不会服输的 @小日 @逆熵学园 @我有一个梦想
+// @author     				pengziAI
+// @license    				MIT
+// @match      				*://*.zhihuishu.com/*
+// @match      				*://*.chaoxing.com/*
+// @match      				*://*.edu.cn/*
+// @match      				*://*.org.cn/*
+// @match      				*://*.xueyinonline.com/*
+// @match      				*://*.hnsyu.net/*
+// @match      				*://*.hnou.edu.cn/*
+// @match      				*://*.qutjxjy.cn/*
+// @match      				*://*.unipus.cn/*
+// @match      				*://*.ynny.cn/*
+// @match      				*://*.hnvist.cn/*
+// @match      				*://*.fjlecb.cn/*
+// @match      				*://*.u.unipus.cn/*
+// @match      				*://*.gdhkmooc.com/*
+// @match      				*://*.cugbonline.cn/*
+// @match      				*://*.icve.com.cn/*
+// @match      				*://*.course.icve.com.cn/*
+// @match      				*://*.courshare.cn/*
+// @match      				*://*.zjy2.icve.com.cn/*
+// @match      				*://*.zyk.icve.com.cn/*
+// @match      				*://*.icourse163.org/*
+// @match      				*://*.cjnep.net/*
+// @match      				*://*.mianyang.cn/*
+// @match             *://*.mosoteach.cn/*
+// @match             *://*.ouchn.cn/*
+// @match             *://*.nbdlib.cn/*
+// @match      	      *://*.yuketang.cn/*
+// @match      	      *://v.met0.top/*
+// @match      	      *://*.xuetangx.com/*
+// @namespace         https://wpzllq.top
+// @grant      				GM_getTab
+// @grant             GM_saveTab
+// @grant      				GM_setValue
+// @grant      				GM_getValue
+// @grant             GM_listValues
+// @grant             GM_deleteValue
+// @grant             GM_addValueChangeListener
+// @grant             GM_removeValueChangeListener
+// @grant             GM_notification
+// @grant             GM_xmlhttpRequest
+// @grant             GM_addStyle
+// @grant             unsafeWindow
+
+// @run-at     				document-start
+// @connect    				localhost
+// @connect    				127.0.0.1
+// @connect           *
+
+// ==/UserScript==
