@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         棚子网课助手｜自定义 OpenAI 兼容 API｜AI聊天｜AI搜题
-// @version      2.44.1
+// @name         小肥鱼AI
+// @version      2.44.2
 // @homepageURL  https://github.com/shajinhui/ai-course-assistant
 // @supportURL   https://github.com/shajinhui/ai-course-assistant/issues
 // @updateURL    https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.meta.js

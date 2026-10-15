@@ -1,6 +1,6 @@
-# 仅 AI 答题版油猴脚本
+# 小肥鱼AI
 
-版本 2.44.1。脚本使用用户自填的 OpenAI 兼容接口，聊天、搜题、作业考试与视频弹题都以该接口为唯一作答来源。
+版本 2.44.2。小肥鱼AI 是使用用户自填 OpenAI 兼容接口的油猴脚本，聊天、搜题、作业考试与视频弹题都以该接口为唯一作答来源。
 
 主导航固定为 **AI 聊天、在线搜题、答题结果、设置**。平台操作只显示当前页面及已登记 iframe 匹配的功能；首页、窗口、日志、配置同步和调试入口收进默认关闭的 **高级工具**。版本更新入口直接打开 GitHub Release，旧的检查更新面板不再出现在菜单中。旧版 AI 接口配置与面板选中记录继续兼容。
 
@@ -65,7 +65,7 @@ src/
     zz-epilogue.js               UMD 外壳收尾
   ui/theme.css                   ★ 主题样式（设计令牌 / 布局 / AI 面板 / 弹窗）
   entries/bootstrap.js           ★ 启动入口
-  entries/ai-entry.js            ★ 悬浮「AI 设置 / 聊天」按钮
+  entries/ai-entry.js            ★ 悬浮「小肥鱼AI」按钮
   entries/anti-copy-hook.js      ★ 反复制 Hook
 tools/
   module-map.mjs                 模块映射表（唯一的装配定义）
@@ -129,7 +129,7 @@ tests/                           接口、面板、构建、发布包测试
 | `kernel/zz-epilogue.js` | 13641 | UMD 外壳收尾 |
 | `ui/theme.css` | 13644–14270 | 主题样式（设计令牌 / 布局 / AI 面板 / 弹窗） `★` |
 | `entries/bootstrap.js` | 14274–14294 | 启动入口：组装 projects 并调用 start() `★` |
-| `entries/ai-entry.js` | 14300–14366 | 悬浮「AI 设置 / 聊天」按钮（Shadow DOM） `★` |
+| `entries/ai-entry.js` | 14300–14366 | 悬浮「小肥鱼AI」按钮（Shadow DOM） `★` |
 | `entries/anti-copy-hook.js` | 14368–14577 | 反复制 Hook：解锁页面文本选择 `★` |
 
 ## 维护流程
@@ -192,7 +192,7 @@ node tools/extract-from-bundle.mjs [原始文件路径]   # 默认读 .backup/20
 ## 使用
 
 1. 在 Tampermonkey 中用 `xxx.user.js` 替换原脚本，或把它的全部内容粘贴到原脚本编辑器并保存。避免同时启用新旧两份脚本。
-2. 打开脚本匹配的网课网站，点击右下角 **AI 设置 / 聊天**，或选择 **AI 聊天**。
+2. 打开脚本匹配的网课网站，点击右下角 **小肥鱼AI** 按钮，或选择 **AI 聊天**。
 3. 填写 **API 地址、API Key、模型名称**。离开输入框后自动保存，无需在代码里写 Key。
 4. 点击 **测试连接**。成功后可输入问题，点击发送，或按 Ctrl / ⌘ + Enter。清空对话会重置上下文。
 5. 手动搜题入口是 **在线搜题**。完成接口配置后，搜题与原平台的自动答题流程直接调用 AI，无需选择答题来源。

@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         棚子网课助手｜自定义 OpenAI 兼容 API｜AI聊天｜AI搜题
-// @version      2.44.1
+// @name         小肥鱼AI
+// @version      2.44.2
 // @homepageURL  https://github.com/shajinhui/ai-course-assistant
 // @supportURL   https://github.com/shajinhui/ai-course-assistant/issues
 // @updateURL    https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.meta.js
@@ -2475,7 +2475,7 @@ var __publicField = (obj, key, value) => {
           } else if (script.projectName) {
             await $store.setTab($const.TAB_CURRENT_PANEL_NAME, `${script.projectName}-${script.name}`);
           } else {
-            console.warn("[OCS]", `${script.name} \u65E0\u6CD5\u7F6E\u9876\uFF0C projectName \u4E0E namespace \u90FD\u4E3A pengziAI`);
+            console.warn("[OCS]", `${script.name} 无法打开面板：缺少 projectName 和 namespace。`);
           }
         },
         minimize: () => {
@@ -2550,8 +2550,8 @@ var __publicField = (obj, key, value) => {
         const profile = $creator.tooltip(
           el(
             "div",
-            { className: "brand", title: "棚子AI" },
-            [el("span", { className: "brand-mark" }), el("span", { className: "brand-name" }, "棚子 AI")]
+            { className: "brand", title: "小肥鱼AI" },
+            [el("span", { className: "brand-mark" }), el("span", { className: "brand-name" }, "小肥鱼AI")]
           )
         );
         const panelButton = ({ project, script, label }, className = "nav-item") => {
@@ -7144,7 +7144,7 @@ ${content}</tr>
                     }
                   }
                 } else {
-                  return el("div", "棚子AI");
+                  return el("div", "小肥鱼AI");
                 }
               };
               render();
@@ -14516,14 +14516,14 @@ const { start, definedProjects, CommonProject } = OCS;
     `;
     const button = document.createElement("button");
     button.type = "button";
-    button.title = "AI 设置 / 聊天";
-    button.setAttribute("aria-label", "AI 设置 / 聊天");
+    button.title = "小肥鱼AI · 设置 / 聊天";
+    button.setAttribute("aria-label", "小肥鱼AI · 设置 / 聊天");
     const icon = document.createElement("span");
     icon.className = "icon";
     icon.textContent = "✦";
     const label = document.createElement("span");
     label.className = "label";
-    label.textContent = "AI 设置 / 聊天";
+    label.textContent = "小肥鱼AI";
     button.append(icon, label);
     shadow.append(css, button);
     host.onclick = async () => {

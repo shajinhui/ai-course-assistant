@@ -559,7 +559,7 @@
                     }
                   }
                 } else {
-                  return el("div", "棚子AI");
+                  return el("div", "小肥鱼AI");
                 }
               };
               render();

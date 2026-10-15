@@ -76,7 +76,7 @@ export const PARTS = [
   { text: '\n\n\n', note: '样式与启动入口之间的空行' },
   { file: 'src/entries/bootstrap.js', start: 14274, end: 14294, note: '★ 启动入口：组装 projects 并调用 start()' },
   { text: '\n\n\n\n\n', note: '启动入口与悬浮入口之间的空行' },
-  { file: 'src/entries/ai-entry.js', start: 14300, end: 14366, note: '★ 悬浮「AI 设置 / 聊天」按钮（Shadow DOM）' },
+  { file: 'src/entries/ai-entry.js', start: 14300, end: 14366, note: '★ 悬浮「小肥鱼AI」按钮（Shadow DOM）' },
   { text: '\n', note: '悬浮入口与反复制 Hook 之间的空行' },
   { file: 'src/entries/anti-copy-hook.js', start: 14368, end: 14577, note: '★ 反复制 Hook：解锁页面文本选择' }
 ];

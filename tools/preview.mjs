@@ -73,7 +73,7 @@ const shell = ({ menuOpen = false, advancedOpen = false, changed = false, platfo
   <container-element>
     <header-element>
       <div class="header-layout"><div class="header-toolbar">
-        <div class="brand"><span class="brand-mark"></span><span class="brand-name">棚子 AI</span></div>
+        <div class="brand"><span class="brand-mark"></span><span class="brand-name">小肥鱼AI</span></div>
         <details class="advanced-tools"${menuOpen ? ' open' : ''}>
           <summary>高级工具</summary><div class="tools-content">${MENU}</div>
         </details>
@@ -100,7 +100,7 @@ async function main() {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>脚本面板配色与设置分组预览</title>
+<title>小肥鱼AI · 菜单与设置预览</title>
 <style>
   :root { color-scheme: light; }
   body {
@@ -118,7 +118,7 @@ async function main() {
 </style>
 </head>
 <body>
-  <h1>脚本面板配色与设置分组预览</h1>
+  <h1>小肥鱼AI · 菜单与设置预览</h1>
   <p class="lede">
     下面三块由 <code>src/ui/theme.css</code> 实时渲染，DOM 结构与脚本输出一致。<br>
     主导航固定为 AI 聊天、在线搜题、答题结果、设置，其他工具默认收起。<br>

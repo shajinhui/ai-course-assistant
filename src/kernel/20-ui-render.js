@@ -56,7 +56,7 @@
           } else if (script.projectName) {
             await $store.setTab($const.TAB_CURRENT_PANEL_NAME, `${script.projectName}-${script.name}`);
           } else {
-            console.warn("[OCS]", `${script.name} \u65E0\u6CD5\u7F6E\u9876\uFF0C projectName \u4E0E namespace \u90FD\u4E3A pengziAI`);
+            console.warn("[OCS]", `${script.name} 无法打开面板：缺少 projectName 和 namespace。`);
           }
         },
         minimize: () => {
@@ -131,8 +131,8 @@
         const profile = $creator.tooltip(
           el(
             "div",
-            { className: "brand", title: "棚子AI" },
-            [el("span", { className: "brand-mark" }), el("span", { className: "brand-name" }, "棚子 AI")]
+            { className: "brand", title: "小肥鱼AI" },
+            [el("span", { className: "brand-mark" }), el("span", { className: "brand-name" }, "小肥鱼AI")]
           )
         );
         const panelButton = ({ project, script, label }, className = "nav-item") => {

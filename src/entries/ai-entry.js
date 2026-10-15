@@ -38,14 +38,14 @@
     `;
     const button = document.createElement("button");
     button.type = "button";
-    button.title = "AI 设置 / 聊天";
-    button.setAttribute("aria-label", "AI 设置 / 聊天");
+    button.title = "小肥鱼AI · 设置 / 聊天";
+    button.setAttribute("aria-label", "小肥鱼AI · 设置 / 聊天");
     const icon = document.createElement("span");
     icon.className = "icon";
     icon.textContent = "✦";
     const label = document.createElement("span");
     label.className = "label";
-    label.textContent = "AI 设置 / 聊天";
+    label.textContent = "小肥鱼AI";
     button.append(icon, label);
     shadow.append(css, button);
     host.onclick = async () => {
