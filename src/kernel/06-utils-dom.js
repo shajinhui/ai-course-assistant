@@ -55,6 +55,7 @@
     header.onmousedown = dragMouseDown;
     function dragMouseDown(e) {
       e = e || window.event;
+      if (e.target.closest("button, a, summary, input, select, textarea, .theme-toggle, .switch")) return;
       pos3 = e.clientX;
       pos4 = e.clientY;
       document.onmouseup = closeDragElement;

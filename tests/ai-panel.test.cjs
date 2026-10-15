@@ -6,8 +6,15 @@ const { JSDOM, VirtualConsole } = require('jsdom');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'xxx.js'), 'utf8');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 30));
+async function waitFor(check) {
+  for (let i = 0; i < 60; i++) {
+    if (check()) return;
+    await tick();
+  }
+  assert.ok(check(), '等待界面更新超时');
+}
 const response = (content) => ({ status: 200, responseText: JSON.stringify({ choices: [{ message: { content } }] }) });
-async function boot({ store = new Map(), complete = false } = {}) {
+async function boot({ store = new Map(), complete = false, tab: initialTab = {} } = {}) {
   store.set('background.app.closeSync', true);
   store.set('background.update.autoNotify', false);
   const errors = [];
@@ -28,12 +35,12 @@ async function boot({ store = new Map(), complete = false } = {}) {
     set(value) { this.textContent = value; }
   });
   let nextId = 0;
-  let tab = {};
+  let tab = { ...initialTab };
   const state = { reply: response('测试回答 <img src=x onerror=alert(1)>'), delay: 0 };
   Object.assign(w, {
     unsafeWindow: w,
     fetch: async () => { throw new Error('Unexpected fetch in DOM test'); },
-    GM_info: { script: { name: '测试脚本', version: '2.43.0' }, scriptHandler: 'Tampermonkey', scriptMetaStr: source.slice(0, source.indexOf('// ==/UserScript==') + 21) },
+    GM_info: { script: { name: '测试脚本', version: source.match(/@version\s+(\S+)/)[1] }, scriptHandler: 'Tampermonkey', scriptMetaStr: source.slice(0, source.indexOf('// ==/UserScript==') + 21) },
     GM_getValue: (key, fallback) => store.has(key) ? store.get(key) : fallback,
     GM_setValue: (key, value) => {
       const old = store.get(key);
@@ -69,6 +76,110 @@ function configure(f) {
   f.setConfig('apiKey', 'test-only-key');
   f.setConfig('model', 'test-model');
 }
+
+test('主导航只有四个常用入口，点击可切换且配置保留', async (t) => {
+  const f = await boot(); t.after(f.close); configure(f);
+  const names = ['AI 聊天', '在线搜题', '答题结果', '设置'];
+  assert.deepEqual([...f.root.querySelectorAll('.primary-nav button')].map((button) => button.textContent), names);
+  assert.equal(f.root.querySelectorAll('header-element dropdown-element').length, 0);
+  assert.equal(f.root.querySelector('.platform-nav'), null);
+  for (const name of [...names.slice(1), names[0]]) {
+    [...f.root.querySelectorAll('.primary-nav button')].find((button) => button.textContent === name).click();
+    await tick();
+    assert.equal(f.getPanel().querySelector('.separator').textContent, name);
+    assert.equal(f.root.querySelector('.primary-nav [aria-current="page"]').textContent, name);
+  }
+  assert.equal(f.w.OCS.CommonProject.scripts.ai.cfg.apiKey, 'test-only-key');
+  assert.equal(await f.w.OCS.$store.getTab('_current_panel_name_'), 'common.ai');
+  assert.equal(f.errors.length, 0, f.errors.join('\n'));
+});
+
+test('后台工具默认收起，日志仍可打开，版本更新指向 GitHub', async (t) => {
+  const f = await boot(); t.after(f.close);
+  const tools = f.root.querySelector('details.advanced-tools');
+  assert.equal(tools.open, false);
+  assert.equal(tools.querySelector('summary').textContent, '高级工具');
+  assert.match(tools.textContent, /日志/);
+  assert.match(tools.textContent, /请求记录/);
+  assert.doesNotMatch(tools.textContent, /检查更新/);
+  assert.equal(tools.querySelector('a').href, 'https://github.com/shajinhui/ai-course-assistant/releases/latest');
+  tools.open = true;
+  tools.dispatchEvent(new f.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(tools.open, false);
+  assert.equal(f.root.activeElement, tools.querySelector('summary'));
+  tools.open = true;
+  [...tools.querySelectorAll('button')].find((button) => button.textContent === '日志').click();
+  await tick();
+  assert.equal(f.getPanel().querySelector('.separator').textContent, '日志');
+  assert.equal(f.root.querySelector('.advanced-tools').open, false);
+  assert.ok(f.root.querySelector('.advanced-tools.active'));
+  assert.equal(f.root.querySelector('.primary-nav .active'), null);
+  assert.equal(f.errors.length, 0, f.errors.join('\n'));
+});
+
+test('旧菜单选中记录仍能打开改名后的 AI 与答题结果面板', async (t) => {
+  for (const [previous, current] of [['通用-AI 接口与聊天', 'AI 聊天'], ['通用-搜索结果', '答题结果']]) {
+    const f = await boot({ tab: { _current_panel_name_: previous } }); t.after(f.close);
+    assert.equal(f.getPanel().querySelector('.separator').textContent, current);
+    assert.equal(f.root.querySelector('.primary-nav .active').textContent, current);
+    assert.equal(f.errors.length, 0, f.errors.join('\n'));
+  }
+});
+
+function addNavigationFixture(f) {
+  const { Script, Project, CommonProject } = f.w.OCS;
+  const script = (name, namespace, url, extra = {}) => new Script({
+    name, namespace, url: [['测试页面', url]], ...extra,
+    onrender({ panel }) { panel.body.textContent = name + '操作'; }
+  });
+  const project = new Project({
+    name: '测试平台', domains: ['school.edu.cn'], scripts: {
+      guide: script('使用提示', 'test.guide', 'school.edu.cn'),
+      study: script('视频学习', 'test.study', 'school.edu.cn/course'),
+      work: script('作业练习', 'test.work', 'school.edu.cn/course'),
+      hidden: script('隐藏调度器', 'test.hidden', 'school.edu.cn', { hideInPanel: true })
+    }
+  });
+  project.scripts.study.cfg.runAtHash = ['/video', '/document'];
+  project.scripts.work.cfg.runAtHash = '/quiz';
+  CommonProject.scripts.render.startConfig.projects.push(project);
+  return project;
+}
+
+test('平台功能匹配当前路由，切换页面后移除无关入口并回到 AI', async (t) => {
+  const f = await boot(); t.after(f.close); addNavigationFixture(f);
+  const buttons = () => [...f.root.querySelectorAll('.platform-nav button')].map((button) => button.textContent);
+  f.w.history.pushState({}, '', '/course#/video');
+  await waitFor(() => buttons().includes('视频学习'));
+  assert.deepEqual(buttons(), ['视频学习']);
+  assert.doesNotMatch(f.root.querySelector('.platform-nav').textContent, /作业练习|使用提示|隐藏调度器/);
+  assert.match(f.root.querySelector('.advanced-tools').textContent, /测试平台使用提示/);
+  f.root.querySelector('.platform-nav button').click(); await tick();
+  assert.match(f.getPanel().textContent, /视频学习操作/);
+  f.w.history.replaceState({}, '', '/course#/quiz');
+  await waitFor(() => buttons().includes('作业练习'));
+  assert.deepEqual(buttons(), ['作业练习']);
+  assert.equal(f.getPanel().querySelector('.separator').textContent, 'AI 聊天');
+  f.w.history.pushState({}, '', '/elsewhere');
+  await waitFor(() => !f.root.querySelector('.platform-nav'));
+  const urls = await f.w.OCS.$store.getTab('_urls_');
+  assert.equal(urls.includes('https://school.edu.cn/course#/video'), false);
+  assert.equal(urls.includes('https://school.edu.cn/course#/quiz'), false);
+  assert.equal(f.errors.length, 0, f.errors.join('\n'));
+});
+
+test('匹配已登记的题目 iframe，离开后不保留过期面板', async (t) => {
+  const f = await boot(); t.after(f.close); addNavigationFixture(f);
+  await f.w.OCS.$store.setTab('_urls_', [f.w.location.href, 'https://school.edu.cn/course#/quiz']);
+  await waitFor(() => !!f.root.querySelector('.platform-nav'));
+  assert.equal(f.root.querySelector('.platform-nav button').textContent, '作业练习');
+  f.root.querySelector('.platform-nav button').click(); await tick();
+  assert.match(f.getPanel().textContent, /作业练习操作/);
+  await f.w.OCS.$store.setTab('_urls_', [f.w.location.href]);
+  await waitFor(() => !f.root.querySelector('.platform-nav'));
+  assert.equal(f.getPanel().querySelector('.separator').textContent, 'AI 聊天');
+  assert.equal(f.errors.length, 0, f.errors.join('\n'));
+});
 
 test('full script starts on an empty page; configuration, chat and private logging work', async (t) => {
   const f = await boot(); t.after(f.close);

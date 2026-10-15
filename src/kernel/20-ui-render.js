@@ -51,10 +51,10 @@
           return isCurrentPanel(script.projectName, script, currentPanelName);
         },
         pin: async (script) => {
-          if (script.projectName) {
-            await $store.setTab($const.TAB_CURRENT_PANEL_NAME, `${script.projectName}-${script.name}`);
-          } else if (script.namespace) {
+          if (script.namespace) {
             await $store.setTab($const.TAB_CURRENT_PANEL_NAME, script.namespace);
+          } else if (script.projectName) {
+            await $store.setTab($const.TAB_CURRENT_PANEL_NAME, `${script.projectName}-${script.name}`);
           } else {
             console.warn("[OCS]", `${script.name} \u65E0\u6CD5\u7F6E\u9876\uFF0C projectName \u4E0E namespace \u90FD\u4E3A pengziAI`);
           }
@@ -101,8 +101,33 @@
       };
       const matchedScripts = $.getMatchedScripts(projects, [location.href]).filter((s) => !s.hideInPanel);
       const container = el("container-element");
-      const initHeader = (urls, currentPanelName) => {
-        const infos = $gm.getInfos();
+      const navigationFor = (urls) => {
+        const common = CommonProject.scripts;
+        const main = [common.ai, common.onlineSearch, common.workResults, common.settings].map((script) => ({ project: CommonProject, script }));
+        const advanced = [common.guide, common.render].map((script) => ({ project: CommonProject, script }));
+        advanced.push(...$.getMatchedScripts([BackgroundProject], urls)
+          .filter((script) => !script.hideInPanel && script !== BackgroundProject.scripts.update)
+          .map((script) => ({ project: BackgroundProject, script })));
+        const platforms = [];
+        for (const project of projects) {
+          if (project === CommonProject || project === BackgroundProject) continue;
+          const matched = $.getMatchedScripts([project], urls).filter((script) => {
+            if (script.hideInPanel) return false;
+            const hashes = script.cfg.runAtHash;
+            if (!hashes) return true;
+            return urls.some((url) => $.getMatchedScripts([project], [url]).includes(script) &&
+              (Array.isArray(hashes) ? hashes : [hashes]).some((hash) => new URL(url).hash.includes(hash)));
+          });
+          const guide = project.scripts.guide;
+          if (guide && !guide.hideInPanel && project.domains.some((domain) => urls.some((url) => new URL(url).hostname === domain || new URL(url).hostname.endsWith("." + domain)))) {
+            advanced.push({ project, script: guide, label: project.name + "使用提示" });
+          }
+          const scripts = matched.filter((script) => script !== guide);
+          if (scripts.length) platforms.push({ project, scripts });
+        }
+        return { main, advanced, platforms };
+      };
+      const initHeader = (navigation, selectedScript) => {
         const profile = $creator.tooltip(
           el(
             "div",
@@ -110,41 +135,35 @@
             [el("span", { className: "brand-mark" }), el("span", { className: "brand-name" }, "棚子 AI")]
           )
         );
-        const scriptDropdowns = [];
-        for (const project of projects) {
-          const dropdown = el("dropdown-element");
-          let selected = false;
-          const options = [];
-          const scripts = $.getMatchedScripts([project], urls).filter((s) => !s.hideInPanel);
-          if (scripts.length) {
-            for (const key in project.scripts) {
-              if (Object.prototype.hasOwnProperty.call(project.scripts, key)) {
-                const script = project.scripts[key];
-                if (!script.hideInPanel) {
-                  const optionSelected = isCurrentPanel(project.name, script, currentPanelName);
-                  const option = el("div", { className: "dropdown-option" }, script.name);
-                  if (optionSelected) {
-                    option.classList.add("active");
-                  }
-                  if (selected !== true && optionSelected) {
-                    selected = true;
-                  }
-                  option.onclick = () => {
-                    $store.setTab($const.TAB_CURRENT_PANEL_NAME, project.name + "-" + script.name);
-                  };
-                  options.push(option);
-                }
-              }
-            }
-            if (selected) {
-              dropdown.classList.add("active");
-            }
-            dropdown.triggerElement = el("div", { className: "" }, project.name);
-            dropdown.triggerElement.style.padding = "0px 8px";
-            dropdown.content.append(...options);
-            scriptDropdowns.push(dropdown);
+        const panelButton = ({ project, script, label }, className = "nav-item") => {
+          const button = el("button", { type: "button", className }, label || script.name);
+          button.dataset.panel = script.namespace || project.name + "-" + script.name;
+          if (script === selectedScript) {
+            button.classList.add("active");
+            button.setAttribute("aria-current", "page");
           }
-        }
+          button.onclick = () => this.methods.pin(script);
+          return button;
+        };
+        const primary = el("nav", { className: "primary-nav", ariaLabel: "主要功能" }, navigation.main.map((entry) => panelButton(entry)));
+        const tools = el("details", { className: "advanced-tools" });
+        const toolsSummary = el("summary", "高级工具");
+        if (navigation.advanced.some(({ script }) => script === selectedScript)) tools.classList.add("active");
+        const toolsContent = el("div", { className: "tools-content" }, navigation.advanced.map((entry) => panelButton(entry, "tool-item")));
+        toolsContent.append(el("a", {
+          className: "tool-item", href: "https://github.com/shajinhui/ai-course-assistant/releases/latest",
+          target: "_blank", rel: "noopener noreferrer"
+        }, "版本更新"));
+        tools.append(toolsSummary, toolsContent);
+        tools.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            tools.open = false;
+            toolsSummary.focus();
+          }
+        });
+        const platformRows = navigation.platforms.map(({ project, scripts }) => el("nav", {
+          className: "platform-nav", ariaLabel: project.name + "当前页面功能"
+        }, [el("span", { className: "platform-label" }, project.name), ...scripts.map((script) => panelButton({ project, script }))]));
         const isMinimize = () => this.cfg.visual === "minimize";
         const visualSwitcher = $creator.tooltip(
           el("div", {
@@ -177,13 +196,15 @@
         );
         container.header.replaceChildren();
         container.header.append(
-          el("div", { style: { width: "100%" } }, [
-            el("div", { style: { display: "flex", alignItems: "center", width: "100%" } }, [
+          el("div", { className: "header-layout" }, [
+            el("div", { className: "header-toolbar" }, [
               profile,
-              ...scriptDropdowns,
+              tools,
               themeToggle,
               container.header.visualSwitcher || ""
             ]),
+            primary,
+            ...platformRows,
             el("div", { style: { display: "flex", width: "100%" } }, [$elements.extraMenuBar])
           ])
         );
@@ -235,24 +256,15 @@
         });
         this.onConfigChange("visual", (curr) => visual(curr));
       };
-      const renderBody = async (currentPanelName) => {
+      const renderBody = async ({ project, script }) => {
         var _a;
-        for (const project of projects) {
-          for (const key in project.scripts) {
-            if (Object.prototype.hasOwnProperty.call(project.scripts, key)) {
-              const script = project.scripts[key];
-              if (isCurrentPanel(project.name, script, currentPanelName)) {
-                const panel2 = $creator.scriptPanel(script);
-                script.projectName = project.name;
-                script.panel = panel2;
-                script.header = container.header;
-                container.body.replaceChildren(panel2);
-                (_a = script.onrender) == null ? void 0 : _a.call(script, { panel: panel2, header: container.header });
-                script.emit("render", { panel: panel2, header: container.header });
-              }
-            }
-          }
-        }
+        const panel2 = $creator.scriptPanel(script);
+        script.projectName = project.name;
+        script.panel = panel2;
+        script.header = container.header;
+        container.body.replaceChildren(panel2);
+        (_a = script.onrender) == null ? void 0 : _a.call(script, { panel: panel2, header: container.header });
+        script.emit("render", { panel: panel2, header: container.header });
       };
       const initCorsModalSystem = () => {
         cors.on("modal", async (args) => {
@@ -276,11 +288,14 @@
         container.style.font = `${this.cfg.fontsize}px  Menlo, Monaco, Consolas, 'Courier New', monospace`;
       };
       const rerender = async (urls, currentPanelName) => {
-        initHeader(urls, currentPanelName);
-        await renderBody(currentPanelName);
+        const navigation = navigationFor(Array.from(new Set([location.href, ...urls])));
+        const entries = [...navigation.main, ...navigation.advanced, ...navigation.platforms.flatMap(({ project, scripts }) => scripts.map((script) => ({ project, script })))];
+        const selected = entries.find(({ project, script }) => isCurrentPanel(project.name, script, currentPanelName)) || navigation.main[0];
+        initHeader(navigation, selected.script);
+        await renderBody(selected);
       };
       if (matchedScripts.length !== 0 && self === top) {
-        $store.setTab($const.TAB_URLS, []);
+        $store.setTab($const.TAB_URLS, [location.href]);
         container.append(el("style", {}, style || ""), $elements.messageContainer, $elements.tooltip);
         $elements.root.append(container);
         document.body.append($elements.panel);
@@ -314,7 +329,7 @@
           debounce_1(async (urls) => {
             const currentPanelName = await $store.getTab($const.TAB_CURRENT_PANEL_NAME);
             rerender(defaults2.urls(urls), defaults2.panelName(currentPanelName));
-          }, 2e3)
+          }, 150)
         );
         $store.addTabChangeListener($const.TAB_CURRENT_PANEL_NAME, async (currentPanelName) => {
           const urls = await $store.getTab($const.TAB_URLS) || [location.href];

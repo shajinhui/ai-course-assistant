@@ -35,6 +35,18 @@
       script.emit("start", startConfig);
       (_a = script.onstart) == null ? void 0 : _a.call(script, startConfig);
     });
+    let previousUrl = location.href;
+    let urlSync = Promise.resolve();
+    const syncPageUrl = () => {
+      const currentUrl = location.href;
+      urlSync = urlSync.then(async () => {
+        const urls = await $store.getTab($const.TAB_URLS) || [];
+        const next = Array.from(new Set([...urls.filter((url) => url !== previousUrl), currentUrl]));
+        previousUrl = currentUrl;
+        if (JSON.stringify(urls) !== JSON.stringify(next)) await $store.setTab($const.TAB_URLS, next);
+      }).catch(console.error);
+    };
+    syncPageUrl();
     let active = false;
     if (document.readyState === "interactive") {
       active = true;
@@ -66,12 +78,11 @@
           script.emit("complete");
           (_a = script.oncomplete) == null ? void 0 : _a.call(script, startConfig);
         });
-        $store.getTab($const.TAB_URLS).then((urls) => {
-          $store.setTab($const.TAB_URLS, Array.from(new Set(urls || [])).concat(location.href));
-        });
+        syncPageUrl();
       }
     });
     window.addEventListener("hashchange", () => {
+      syncPageUrl();
       scripts.forEach((script) => {
         var _a;
         script.emit("hashchange", startConfig);
@@ -81,6 +92,7 @@
     history.pushState = addFunctionEventListener(history, "pushState");
     history.replaceState = addFunctionEventListener(history, "replaceState");
     window.addEventListener("pushState", () => {
+      syncPageUrl();
       scripts.forEach((script) => {
         var _a;
         script.emit("historychange", "push", startConfig);
@@ -88,12 +100,14 @@
       });
     });
     window.addEventListener("replaceState", () => {
+      syncPageUrl();
       scripts.forEach((script) => {
         var _a;
         script.emit("historychange", "replace", startConfig);
         (_a = script.onhistorychange) == null ? void 0 : _a.call(script, "replace", startConfig);
       });
     });
+    window.addEventListener("popstate", syncPageUrl);
     window.addEventListener("beforeunload", (e) => {
       var _a;
       let prevent;

@@ -1,5 +1,7 @@
   function isCurrentPanel(projectName, script, currentPanelName) {
-    return projectName + "-" + script.name === currentPanelName || script.namespace === currentPanelName;
+    const legacyPanels = { "common.ai": "通用-AI 接口与聊天", "common.work-results": "通用-搜索结果" };
+    return projectName + "-" + script.name === currentPanelName || script.namespace === currentPanelName ||
+      !!legacyPanels[script.namespace] && legacyPanels[script.namespace] === currentPanelName;
   }
   function handleLowLevelBrowser() {
     if (typeof Element.prototype.replaceChildren === "undefined") {

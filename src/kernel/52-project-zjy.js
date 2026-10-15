@@ -122,7 +122,7 @@
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+              "自动答题前请在「AI 聊天」配置 AI 接口。",
               "\u53EF\u4EE5\u642D\u914D \u201C\u901A\u7528-\u5728\u7EBF\u641C\u9898\u201D \u4E00\u8D77\u4F7F\u7528\u3002",
               "\u8BF7\u624B\u52A8\u8FDB\u5165\u4F5C\u4E1A\u8003\u8BD5\u9875\u9762\u624D\u80FD\u4F7F\u7528\u81EA\u52A8\u7B54\u9898\u3002"
             ]).outerHTML

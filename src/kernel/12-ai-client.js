@@ -46,7 +46,7 @@
       const model = String(cfg.model || "").trim();
       const apiKey = String(cfg.apiKey || "").trim();
       const timeout = Number(cfg.timeout);
-      if (!model) throw new Error("请先在「通用 → AI 接口与聊天」填写模型名称。");
+      if (!model) throw new Error("请先在「AI 聊天」填写模型名称。");
       if (!Number.isFinite(timeout) || timeout < 5 || timeout > 300) throw new Error("请求超时必须为 5～300 秒。");
       if (!openAIRequest) throw new Error("缺少 GM_xmlhttpRequest 权限，请重新安装更新后的脚本。");
       if (!Array.isArray(messages) || !messages.length || messages.some((m) => !["system", "user", "assistant"].includes(m.role) || typeof m.content !== "string")) {

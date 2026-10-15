@@ -115,7 +115,7 @@
   };
   const workNotes = {
     defaultValue: $creator.notes([
-      "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+      "自动答题前请在「AI 聊天」配置 AI 接口。",
       "\u53EF\u4EE5\u642D\u914D \u201C\u901A\u7528-\u5728\u7EBF\u641C\u9898\u201D \u4E00\u8D77\u4F7F\u7528\u3002"
     ]).outerHTML
   };

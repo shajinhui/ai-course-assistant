@@ -47,7 +47,7 @@
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+              "自动答题前请在「AI 聊天」配置 AI 接口。",
               ["\u4EFB\u52A1\u70B9\u4E0D\u662F\u987A\u5E8F\u6267\u884C\uFF0C\u5982\u679C\u67D0\u4E00\u4E2A\u4EFB\u52A1\u6CA1\u6709\u52A8", "\u8BF7\u67E5\u770B\u662F\u5426\u6709\u5176\u4ED6\u4EFB\u52A1\u6B63\u5728\u5B66\u4E60\uFF0C\u8010\u5FC3\u7B49\u5F85\u5373\u53EF\u3002"],
               "闯关模式中，AI 未完成的题目需要自己完成才能解锁章节。",
               "\u4E0D\u8981\u6700\u5C0F\u5316\u6D4F\u89C8\u5668\uFF0C\u53EF\u80FD\u5BFC\u81F4\u811A\u672C\u6682\u505C\u3002",
@@ -126,7 +126,7 @@
         onrender({ panel: panel2 }) {
           var _a;
           if (!OpenAIClient.isConfigured()) {
-            const setting = el("button", { className: "base-style-button-secondary" }, "AI 接口与聊天");
+            const setting = el("button", { className: "base-style-button-secondary" }, "AI 聊天");
             setting.onclick = () => CommonProject.scripts.render.methods.pin(CommonProject.scripts.ai);
             if (state$3.study.aiConfigUnsetMessage === void 0) {
               state$3.study.aiConfigUnsetMessage = $message("warn", {
@@ -917,7 +917,7 @@
     answerMatchMode
   }) {
     if (!OpenAIClient.isConfigured()) {
-      const msg2 = "AI 接口尚未配置，无法自动答题，请在「通用 → AI 接口与聊天」填写设置。";
+      const msg2 = "AI 接口尚未配置，无法自动答题，请在「AI 聊天」填写设置。";
       $message("error", { content: msg2 });
       return $console.warn(msg2);
     }

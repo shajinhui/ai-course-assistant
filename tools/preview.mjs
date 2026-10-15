@@ -46,15 +46,16 @@ const CONFIGS_ADVANCED = [
   configElement('答案匹配模式', select(['相似匹配', '精确匹配'], '相似匹配'))
 ].join('');
 
-const MENU = [
-  '脚本首页', 'AI 接口与聊天', '设置', '搜索结果', '在线搜题', '窗口'
-].map((name) => `<div class="dropdown-option${name === '设置' ? ' active' : ''}">${name}</div>`).join('');
+const MENU = ['脚本首页', '窗口', '日志', '配置同步', '开发者调试', '请求记录', '版本更新']
+  .map((name) => `<button class="tool-item" type="button">${name}</button>`).join('');
+const NAVIGATION = ['AI 聊天', '在线搜题', '答题结果', '设置']
+  .map((name) => `<button class="nav-item${name === '设置' ? ' active' : ''}" type="button"${name === '设置' ? ' aria-current="page"' : ''}>${name}</button>`).join('');
 
 const panel = ({ advancedOpen = false, changed = false } = {}) => `
   <script-panel-element>
     <div class="separator">设置</div>
     <div class="notes card"><ul>
-      <li>搜题与自动答题统一使用你在「AI 接口与聊天」里配置的接口。</li>
+      <li>搜题与自动答题统一使用你在「AI 聊天」里配置的接口。</li>
       <li>下面只列出三项常用设置，其余在「高级设置」里，点开即可调整。</li>
     </ul></div>
     <div class="configs-container card">
@@ -68,17 +69,19 @@ const panel = ({ advancedOpen = false, changed = false } = {}) => `
     <div class="script-panel-body"></div>
   </script-panel-element>`;
 
-const shell = ({ menuOpen = false, advancedOpen = false, changed = false } = {}) => `
+const shell = ({ menuOpen = false, advancedOpen = false, changed = false, platform = false } = {}) => `
   <container-element>
     <header-element>
-      <div style="display:flex;align-items:center;width:100%">
+      <div class="header-layout"><div class="header-toolbar">
         <div class="brand"><span class="brand-mark"></span><span class="brand-name">棚子 AI</span></div>
-        <dropdown-element class="dropdown active">
-          <div style="padding:0 8px">通用</div>
-          <div class="dropdown-content${menuOpen ? ' show' : ''}">${MENU}</div>
-        </dropdown-element>
+        <details class="advanced-tools"${menuOpen ? ' open' : ''}>
+          <summary>高级工具</summary><div class="tools-content">${MENU}</div>
+        </details>
         <div class="theme-toggle">◐</div>
         <div class="switch"><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M19 13H5v-2h14v2z"/></svg></div>
+      </div>
+      <nav class="primary-nav" aria-label="主要功能">${NAVIGATION}</nav>
+      ${platform ? '<nav class="platform-nav" aria-label="知到智慧树当前页面功能"><span class="platform-label">知到智慧树</span><button class="nav-item" type="button">共享课 · 学习</button></nav>' : ''}
       </div>
     </header-element>
     <div class="body">${panel({ advancedOpen, changed })}</div>
@@ -118,12 +121,12 @@ async function main() {
   <h1>脚本面板配色与设置分组预览</h1>
   <p class="lede">
     下面三块由 <code>src/ui/theme.css</code> 实时渲染，DOM 结构与脚本输出一致。<br>
-    第一块对照原截图（菜单展开）：菜单已去掉 emoji，主色由蓝紫渐变改为石墨灰。<br>
-    第二块展开「高级设置」，第三块是深色模式。
+    主导航固定为 AI 聊天、在线搜题、答题结果、设置，其他工具默认收起。<br>
+    第二块展示当前页面的平台功能与高级设置，第三块是深色模式。
   </p>
   <div class="grid">
-    ${frame('浅色 · 菜单展开', 'light', { menuOpen: true })}
-    ${frame('浅色 · 高级设置展开', 'light', { advancedOpen: true, changed: true })}
+    ${frame('浅色 · 高级工具展开', 'light', { menuOpen: true })}
+    ${frame('浅色 · 当前页面功能', 'light', { advancedOpen: true, changed: true, platform: true })}
     ${frame('深色 · 设置面板', 'dark', {})}
   </div>
   <script>
@@ -140,7 +143,7 @@ async function main() {
 </html>
 `;
   await mkdir(path.join(ROOT, 'preview'), { recursive: true });
-  await writeFile(path.join(ROOT, 'preview/index.html'), html);
+  await writeFile(path.join(ROOT, 'preview/index.html'), html.replace(/[ \t]+$/gm, ''));
   console.log('✓ 已生成 preview/index.html');
 }
 

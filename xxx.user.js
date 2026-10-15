@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         棚子网课助手｜自定义 OpenAI 兼容 API｜AI聊天｜AI搜题
-// @version      2.44.0
+// @version      2.44.1
 // @homepageURL  https://github.com/shajinhui/ai-course-assistant
 // @supportURL   https://github.com/shajinhui/ai-course-assistant/issues
 // @updateURL    https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.meta.js
@@ -601,6 +601,18 @@ var __publicField = (obj, key, value) => {
       script.emit("start", startConfig);
       (_a = script.onstart) == null ? void 0 : _a.call(script, startConfig);
     });
+    let previousUrl = location.href;
+    let urlSync = Promise.resolve();
+    const syncPageUrl = () => {
+      const currentUrl = location.href;
+      urlSync = urlSync.then(async () => {
+        const urls = await $store.getTab($const.TAB_URLS) || [];
+        const next = Array.from(new Set([...urls.filter((url) => url !== previousUrl), currentUrl]));
+        previousUrl = currentUrl;
+        if (JSON.stringify(urls) !== JSON.stringify(next)) await $store.setTab($const.TAB_URLS, next);
+      }).catch(console.error);
+    };
+    syncPageUrl();
     let active = false;
     if (document.readyState === "interactive") {
       active = true;
@@ -632,12 +644,11 @@ var __publicField = (obj, key, value) => {
           script.emit("complete");
           (_a = script.oncomplete) == null ? void 0 : _a.call(script, startConfig);
         });
-        $store.getTab($const.TAB_URLS).then((urls) => {
-          $store.setTab($const.TAB_URLS, Array.from(new Set(urls || [])).concat(location.href));
-        });
+        syncPageUrl();
       }
     });
     window.addEventListener("hashchange", () => {
+      syncPageUrl();
       scripts.forEach((script) => {
         var _a;
         script.emit("hashchange", startConfig);
@@ -647,6 +658,7 @@ var __publicField = (obj, key, value) => {
     history.pushState = addFunctionEventListener(history, "pushState");
     history.replaceState = addFunctionEventListener(history, "replaceState");
     window.addEventListener("pushState", () => {
+      syncPageUrl();
       scripts.forEach((script) => {
         var _a;
         script.emit("historychange", "push", startConfig);
@@ -654,12 +666,14 @@ var __publicField = (obj, key, value) => {
       });
     });
     window.addEventListener("replaceState", () => {
+      syncPageUrl();
       scripts.forEach((script) => {
         var _a;
         script.emit("historychange", "replace", startConfig);
         (_a = script.onhistorychange) == null ? void 0 : _a.call(script, "replace", startConfig);
       });
     });
+    window.addEventListener("popstate", syncPageUrl);
     window.addEventListener("beforeunload", (e) => {
       var _a;
       let prevent;
@@ -733,6 +747,7 @@ var __publicField = (obj, key, value) => {
     header.onmousedown = dragMouseDown;
     function dragMouseDown(e) {
       e = e || window.event;
+      if (e.target.closest("button, a, summary, input, select, textarea, .theme-toggle, .switch")) return;
       pos3 = e.clientX;
       pos4 = e.clientY;
       document.onmouseup = closeDragElement;
@@ -1235,7 +1250,7 @@ var __publicField = (obj, key, value) => {
       const model = String(cfg.model || "").trim();
       const apiKey = String(cfg.apiKey || "").trim();
       const timeout = Number(cfg.timeout);
-      if (!model) throw new Error("请先在「通用 → AI 接口与聊天」填写模型名称。");
+      if (!model) throw new Error("请先在「AI 聊天」填写模型名称。");
       if (!Number.isFinite(timeout) || timeout < 5 || timeout > 300) throw new Error("请求超时必须为 5～300 秒。");
       if (!openAIRequest) throw new Error("缺少 GM_xmlhttpRequest 权限，请重新安装更新后的脚本。");
       if (!Array.isArray(messages) || !messages.length || messages.some((m) => !["system", "user", "assistant"].includes(m.role) || typeof m.content !== "string")) {
@@ -2455,10 +2470,10 @@ var __publicField = (obj, key, value) => {
           return isCurrentPanel(script.projectName, script, currentPanelName);
         },
         pin: async (script) => {
-          if (script.projectName) {
-            await $store.setTab($const.TAB_CURRENT_PANEL_NAME, `${script.projectName}-${script.name}`);
-          } else if (script.namespace) {
+          if (script.namespace) {
             await $store.setTab($const.TAB_CURRENT_PANEL_NAME, script.namespace);
+          } else if (script.projectName) {
+            await $store.setTab($const.TAB_CURRENT_PANEL_NAME, `${script.projectName}-${script.name}`);
           } else {
             console.warn("[OCS]", `${script.name} \u65E0\u6CD5\u7F6E\u9876\uFF0C projectName \u4E0E namespace \u90FD\u4E3A pengziAI`);
           }
@@ -2505,8 +2520,33 @@ var __publicField = (obj, key, value) => {
       };
       const matchedScripts = $.getMatchedScripts(projects, [location.href]).filter((s) => !s.hideInPanel);
       const container = el("container-element");
-      const initHeader = (urls, currentPanelName) => {
-        const infos = $gm.getInfos();
+      const navigationFor = (urls) => {
+        const common = CommonProject.scripts;
+        const main = [common.ai, common.onlineSearch, common.workResults, common.settings].map((script) => ({ project: CommonProject, script }));
+        const advanced = [common.guide, common.render].map((script) => ({ project: CommonProject, script }));
+        advanced.push(...$.getMatchedScripts([BackgroundProject], urls)
+          .filter((script) => !script.hideInPanel && script !== BackgroundProject.scripts.update)
+          .map((script) => ({ project: BackgroundProject, script })));
+        const platforms = [];
+        for (const project of projects) {
+          if (project === CommonProject || project === BackgroundProject) continue;
+          const matched = $.getMatchedScripts([project], urls).filter((script) => {
+            if (script.hideInPanel) return false;
+            const hashes = script.cfg.runAtHash;
+            if (!hashes) return true;
+            return urls.some((url) => $.getMatchedScripts([project], [url]).includes(script) &&
+              (Array.isArray(hashes) ? hashes : [hashes]).some((hash) => new URL(url).hash.includes(hash)));
+          });
+          const guide = project.scripts.guide;
+          if (guide && !guide.hideInPanel && project.domains.some((domain) => urls.some((url) => new URL(url).hostname === domain || new URL(url).hostname.endsWith("." + domain)))) {
+            advanced.push({ project, script: guide, label: project.name + "使用提示" });
+          }
+          const scripts = matched.filter((script) => script !== guide);
+          if (scripts.length) platforms.push({ project, scripts });
+        }
+        return { main, advanced, platforms };
+      };
+      const initHeader = (navigation, selectedScript) => {
         const profile = $creator.tooltip(
           el(
             "div",
@@ -2514,41 +2554,35 @@ var __publicField = (obj, key, value) => {
             [el("span", { className: "brand-mark" }), el("span", { className: "brand-name" }, "棚子 AI")]
           )
         );
-        const scriptDropdowns = [];
-        for (const project of projects) {
-          const dropdown = el("dropdown-element");
-          let selected = false;
-          const options = [];
-          const scripts = $.getMatchedScripts([project], urls).filter((s) => !s.hideInPanel);
-          if (scripts.length) {
-            for (const key in project.scripts) {
-              if (Object.prototype.hasOwnProperty.call(project.scripts, key)) {
-                const script = project.scripts[key];
-                if (!script.hideInPanel) {
-                  const optionSelected = isCurrentPanel(project.name, script, currentPanelName);
-                  const option = el("div", { className: "dropdown-option" }, script.name);
-                  if (optionSelected) {
-                    option.classList.add("active");
-                  }
-                  if (selected !== true && optionSelected) {
-                    selected = true;
-                  }
-                  option.onclick = () => {
-                    $store.setTab($const.TAB_CURRENT_PANEL_NAME, project.name + "-" + script.name);
-                  };
-                  options.push(option);
-                }
-              }
-            }
-            if (selected) {
-              dropdown.classList.add("active");
-            }
-            dropdown.triggerElement = el("div", { className: "" }, project.name);
-            dropdown.triggerElement.style.padding = "0px 8px";
-            dropdown.content.append(...options);
-            scriptDropdowns.push(dropdown);
+        const panelButton = ({ project, script, label }, className = "nav-item") => {
+          const button = el("button", { type: "button", className }, label || script.name);
+          button.dataset.panel = script.namespace || project.name + "-" + script.name;
+          if (script === selectedScript) {
+            button.classList.add("active");
+            button.setAttribute("aria-current", "page");
           }
-        }
+          button.onclick = () => this.methods.pin(script);
+          return button;
+        };
+        const primary = el("nav", { className: "primary-nav", ariaLabel: "主要功能" }, navigation.main.map((entry) => panelButton(entry)));
+        const tools = el("details", { className: "advanced-tools" });
+        const toolsSummary = el("summary", "高级工具");
+        if (navigation.advanced.some(({ script }) => script === selectedScript)) tools.classList.add("active");
+        const toolsContent = el("div", { className: "tools-content" }, navigation.advanced.map((entry) => panelButton(entry, "tool-item")));
+        toolsContent.append(el("a", {
+          className: "tool-item", href: "https://github.com/shajinhui/ai-course-assistant/releases/latest",
+          target: "_blank", rel: "noopener noreferrer"
+        }, "版本更新"));
+        tools.append(toolsSummary, toolsContent);
+        tools.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            tools.open = false;
+            toolsSummary.focus();
+          }
+        });
+        const platformRows = navigation.platforms.map(({ project, scripts }) => el("nav", {
+          className: "platform-nav", ariaLabel: project.name + "当前页面功能"
+        }, [el("span", { className: "platform-label" }, project.name), ...scripts.map((script) => panelButton({ project, script }))]));
         const isMinimize = () => this.cfg.visual === "minimize";
         const visualSwitcher = $creator.tooltip(
           el("div", {
@@ -2581,13 +2615,15 @@ var __publicField = (obj, key, value) => {
         );
         container.header.replaceChildren();
         container.header.append(
-          el("div", { style: { width: "100%" } }, [
-            el("div", { style: { display: "flex", alignItems: "center", width: "100%" } }, [
+          el("div", { className: "header-layout" }, [
+            el("div", { className: "header-toolbar" }, [
               profile,
-              ...scriptDropdowns,
+              tools,
               themeToggle,
               container.header.visualSwitcher || ""
             ]),
+            primary,
+            ...platformRows,
             el("div", { style: { display: "flex", width: "100%" } }, [$elements.extraMenuBar])
           ])
         );
@@ -2639,24 +2675,15 @@ var __publicField = (obj, key, value) => {
         });
         this.onConfigChange("visual", (curr) => visual(curr));
       };
-      const renderBody = async (currentPanelName) => {
+      const renderBody = async ({ project, script }) => {
         var _a;
-        for (const project of projects) {
-          for (const key in project.scripts) {
-            if (Object.prototype.hasOwnProperty.call(project.scripts, key)) {
-              const script = project.scripts[key];
-              if (isCurrentPanel(project.name, script, currentPanelName)) {
-                const panel2 = $creator.scriptPanel(script);
-                script.projectName = project.name;
-                script.panel = panel2;
-                script.header = container.header;
-                container.body.replaceChildren(panel2);
-                (_a = script.onrender) == null ? void 0 : _a.call(script, { panel: panel2, header: container.header });
-                script.emit("render", { panel: panel2, header: container.header });
-              }
-            }
-          }
-        }
+        const panel2 = $creator.scriptPanel(script);
+        script.projectName = project.name;
+        script.panel = panel2;
+        script.header = container.header;
+        container.body.replaceChildren(panel2);
+        (_a = script.onrender) == null ? void 0 : _a.call(script, { panel: panel2, header: container.header });
+        script.emit("render", { panel: panel2, header: container.header });
       };
       const initCorsModalSystem = () => {
         cors.on("modal", async (args) => {
@@ -2680,11 +2707,14 @@ var __publicField = (obj, key, value) => {
         container.style.font = `${this.cfg.fontsize}px  Menlo, Monaco, Consolas, 'Courier New', monospace`;
       };
       const rerender = async (urls, currentPanelName) => {
-        initHeader(urls, currentPanelName);
-        await renderBody(currentPanelName);
+        const navigation = navigationFor(Array.from(new Set([location.href, ...urls])));
+        const entries = [...navigation.main, ...navigation.advanced, ...navigation.platforms.flatMap(({ project, scripts }) => scripts.map((script) => ({ project, script })))];
+        const selected = entries.find(({ project, script }) => isCurrentPanel(project.name, script, currentPanelName)) || navigation.main[0];
+        initHeader(navigation, selected.script);
+        await renderBody(selected);
       };
       if (matchedScripts.length !== 0 && self === top) {
-        $store.setTab($const.TAB_URLS, []);
+        $store.setTab($const.TAB_URLS, [location.href]);
         container.append(el("style", {}, style || ""), $elements.messageContainer, $elements.tooltip);
         $elements.root.append(container);
         document.body.append($elements.panel);
@@ -2718,7 +2748,7 @@ var __publicField = (obj, key, value) => {
           debounce_1(async (urls) => {
             const currentPanelName = await $store.getTab($const.TAB_CURRENT_PANEL_NAME);
             rerender(defaults2.urls(urls), defaults2.panelName(currentPanelName));
-          }, 2e3)
+          }, 150)
         );
         $store.addTabChangeListener($const.TAB_CURRENT_PANEL_NAME, async (currentPanelName) => {
           const urls = await $store.getTab($const.TAB_URLS) || [location.href];
@@ -2830,7 +2860,9 @@ var __publicField = (obj, key, value) => {
     return btn;
   }
   function isCurrentPanel(projectName, script, currentPanelName) {
-    return projectName + "-" + script.name === currentPanelName || script.namespace === currentPanelName;
+    const legacyPanels = { "common.ai": "通用-AI 接口与聊天", "common.work-results": "通用-搜索结果" };
+    return projectName + "-" + script.name === currentPanelName || script.namespace === currentPanelName ||
+      !!legacyPanels[script.namespace] && legacyPanels[script.namespace] === currentPanelName;
   }
   function handleLowLevelBrowser() {
     if (typeof Element.prototype.replaceChildren === "undefined") {
@@ -6401,7 +6433,7 @@ ${content}</tr>
     if (!OpenAIClient.isConfigured()) {
       onAIConfigMissing == null ? void 0 : onAIConfigMissing(opts);
       return $message("warn", {
-        content: "AI 接口尚未配置。请在「通用 → AI 接口与聊天」填写 API 地址和模型名称。",
+        content: "AI 接口尚未配置。请在「AI 聊天」填写 API 地址和模型名称。",
         duration: 0
       });
     } else {
@@ -6568,7 +6600,7 @@ ${content}</tr>
         }
       }),
       ai: new Script({
-        name: "AI 接口与聊天",
+        name: "AI 聊天",
         url: [["所有页面", /.*/]],
         namespace: "common.ai",
         configs: {
@@ -6734,7 +6766,7 @@ ${content}</tr>
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "搜题与自动答题统一使用你在「AI 接口与聊天」里配置的接口。",
+              "搜题与自动答题统一使用你在「AI 聊天」里配置的接口。",
               "\u4E0B\u9762\u53EA\u5217\u51FA\u4E09\u9879\u5E38\u7528\u8BBE\u7F6E\uFF0C\u5176\u4F59\u5728\u300C\u9AD8\u7EA7\u8BBE\u7F6E\u300D\u91CC\uFF0C\u70B9\u5F00\u5373\u53EF\u8C03\u6574\u3002"
             ]).outerHTML
           },
@@ -6833,7 +6865,7 @@ ${content}</tr>
         }
       }),
       workResults: new Script({
-        name: "\u641C\u7D22\u7ED3\u679C",
+        name: "答题结果",
         url: [["\u6240\u6709\u9875\u9762", /.*/]],
         namespace: "common.work-results",
         configs: {
@@ -7175,7 +7207,7 @@ ${content}</tr>
           });
           const search = async (value) => {
             if (!OpenAIClient.isConfigured()) {
-              $modal("alert", { content: "请先在「通用 → AI 接口与聊天」配置 API 地址和模型名称。" });
+              $modal("alert", { content: "请先在「AI 聊天」配置 API 地址和模型名称。" });
               return;
             }
             content.replaceChildren(el("span", "\u641C\u7D22\u4E2D..."));
@@ -7383,7 +7415,7 @@ ${content}</tr>
   };
   const workNotes = {
     defaultValue: $creator.notes([
-      "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+      "自动答题前请在「AI 聊天」配置 AI 接口。",
       "\u53EF\u4EE5\u642D\u914D \u201C\u901A\u7528-\u5728\u7EBF\u641C\u9898\u201D \u4E00\u8D77\u4F7F\u7528\u3002"
     ]).outerHTML
   };
@@ -7908,7 +7940,7 @@ ${content}</tr>
           notes: {
             defaultValue: $creator.notes([
               "\u{1F4E2} \u5982\u679C\u672A\u5F00\u59CB\u7B54\u9898\uFF0C\u8BF7\u5C1D\u8BD5\u5237\u65B0\u9875\u9762\u3002",
-              "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+              "自动答题前请在「AI 聊天」配置 AI 接口。",
               "\u53EF\u4EE5\u642D\u914D \u201C\u901A\u7528-\u5728\u7EBF\u641C\u9898\u201D \u4E00\u8D77\u4F7F\u7528\u3002"
             ]).outerHTML
           }
@@ -11153,7 +11185,7 @@ ${content}</tr>
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+              "自动答题前请在「AI 聊天」配置 AI 接口。",
               ["\u4EFB\u52A1\u70B9\u4E0D\u662F\u987A\u5E8F\u6267\u884C\uFF0C\u5982\u679C\u67D0\u4E00\u4E2A\u4EFB\u52A1\u6CA1\u6709\u52A8", "\u8BF7\u67E5\u770B\u662F\u5426\u6709\u5176\u4ED6\u4EFB\u52A1\u6B63\u5728\u5B66\u4E60\uFF0C\u8010\u5FC3\u7B49\u5F85\u5373\u53EF\u3002"],
               "闯关模式中，AI 未完成的题目需要自己完成才能解锁章节。",
               "\u4E0D\u8981\u6700\u5C0F\u5316\u6D4F\u89C8\u5668\uFF0C\u53EF\u80FD\u5BFC\u81F4\u811A\u672C\u6682\u505C\u3002",
@@ -11232,7 +11264,7 @@ ${content}</tr>
         onrender({ panel: panel2 }) {
           var _a;
           if (!OpenAIClient.isConfigured()) {
-            const setting = el("button", { className: "base-style-button-secondary" }, "AI 接口与聊天");
+            const setting = el("button", { className: "base-style-button-secondary" }, "AI 聊天");
             setting.onclick = () => CommonProject.scripts.render.methods.pin(CommonProject.scripts.ai);
             if (state$3.study.aiConfigUnsetMessage === void 0) {
               state$3.study.aiConfigUnsetMessage = $message("warn", {
@@ -12023,7 +12055,7 @@ ${content}</tr>
     answerMatchMode
   }) {
     if (!OpenAIClient.isConfigured()) {
-      const msg2 = "AI 接口尚未配置，无法自动答题，请在「通用 → AI 接口与聊天」填写设置。";
+      const msg2 = "AI 接口尚未配置，无法自动答题，请在「AI 聊天」填写设置。";
       $message("error", { content: msg2 });
       return $console.warn(msg2);
     }
@@ -12567,7 +12599,7 @@ ${content}</tr>
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+              "自动答题前请在「AI 聊天」配置 AI 接口。",
               "\u53EF\u4EE5\u642D\u914D \u201C\u901A\u7528-\u5728\u7EBF\u641C\u9898\u201D \u4E00\u8D77\u4F7F\u7528\u3002",
               "\u8BF7\u624B\u52A8\u8FDB\u5165\u4F5C\u4E1A\u8003\u8BD5\u9875\u9762\u624D\u80FD\u4F7F\u7528\u81EA\u52A8\u7B54\u9898\u3002"
             ]).outerHTML
@@ -12895,7 +12927,7 @@ ${content}</tr>
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "自动答题前请在「通用 → AI 接口与聊天」配置 AI 接口。",
+              "自动答题前请在「AI 聊天」配置 AI 接口。",
               "\u53EF\u4EE5\u642D\u914D \u201C\u901A\u7528-\u5728\u7EBF\u641C\u9898\u201D \u4E00\u8D77\u4F7F\u7528\u3002",
               "\u8BF7\u624B\u52A8\u8FDB\u5165\u4F5C\u4E1A\u8003\u8BD5\u9875\u9762\u624D\u80FD\u4F7F\u7528\u81EA\u52A8\u7B54\u9898\u3002"
             ]).outerHTML
@@ -13804,6 +13836,9 @@ container-element.close { display: none; }
 container-element.minimize { min-width: unset; }
 container-element.minimize > .body,
 container-element.minimize > .footer { display: none; }
+container-element.minimize .primary-nav,
+container-element.minimize .platform-nav,
+container-element.minimize .extra-menu-bar { display: none; }
 container-element.minimize header-element { border-bottom-color: transparent; border-radius: 18px; }
 
 /* ============ 头部 ============ */
@@ -13864,6 +13899,40 @@ header-element .switch:hover,
 header-element .theme-toggle:hover { background: var(--ocs-tint); color: var(--ocs-a1); }
 header-element .switch svg { width: 16px; height: 16px; fill: currentColor; }
 .extra-menu-bar { display: none; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* ============ 常用导航与高级工具 ============ */
+.header-layout { width: 100%; min-width: 0; }
+.header-toolbar { display: flex; align-items: center; gap: 4px; }
+.header-toolbar .theme-toggle { margin-left: 0; flex: none; }
+.header-toolbar .switch { flex: none; }
+.primary-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 10px; }
+.nav-item, .tool-item {
+  box-sizing: border-box;
+  border: 0;
+  font: inherit;
+  font-size: 0.92em;
+  line-height: 1.5;
+  background: transparent;
+  color: var(--ocs-muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+.nav-item { padding: 7px 8px; border-radius: 9px; white-space: nowrap; }
+.nav-item:hover, .tool-item:hover { background: var(--ocs-tint); color: var(--ocs-a1); }
+.nav-item.active { background: var(--ocs-grad); color: var(--ocs-on-accent); font-weight: 700; }
+.nav-item:focus-visible, .tool-item:focus-visible, .advanced-tools > summary:focus-visible { outline: 2px solid var(--ocs-a1); outline-offset: 2px; }
+.platform-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding-top: 9px; margin-top: 9px; border-top: 1px solid var(--ocs-border); }
+.platform-label { color: var(--ocs-muted); font-size: 0.82em; margin-right: 4px; }
+.platform-nav .nav-item { padding: 5px 8px; }
+.advanced-tools { position: relative; margin-left: auto; }
+.advanced-tools > summary { padding: 4px 8px; border-radius: 8px; color: var(--ocs-muted); font-size: 0.85em; cursor: pointer; list-style: none; }
+.advanced-tools > summary::-webkit-details-marker { display: none; }
+.advanced-tools > summary::after { content: "⌄"; margin-left: 4px; }
+.advanced-tools[open] > summary, .advanced-tools.active > summary { background: var(--ocs-tint); color: var(--ocs-a1); }
+.tools-content { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; width: max-content; min-width: 170px; max-width: min(280px, calc(100vw - 48px)); max-height: 45vh; overflow: auto; padding: 6px; border: 1px solid var(--ocs-border); border-radius: 12px; background: var(--ocs-surface); box-shadow: var(--ocs-shadow); }
+.advanced-tools:not([open]) > .tools-content { display: none; }
+.tool-item { display: block; width: 100%; padding: 7px 10px; border-radius: 7px; text-align: left; }
+.tool-item.active { background: var(--ocs-tint); color: var(--ocs-a1); font-weight: 700; }
 
 /* ============ 导航下拉 ============ */
 .dropdown { display: inline-block; position: relative; margin-right: 2px; }

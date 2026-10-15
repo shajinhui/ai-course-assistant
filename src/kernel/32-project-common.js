@@ -15,7 +15,7 @@
         }
       }),
       ai: new Script({
-        name: "AI 接口与聊天",
+        name: "AI 聊天",
         url: [["所有页面", /.*/]],
         namespace: "common.ai",
         configs: {
@@ -181,7 +181,7 @@
         configs: {
           notes: {
             defaultValue: $creator.notes([
-              "搜题与自动答题统一使用你在「AI 接口与聊天」里配置的接口。",
+              "搜题与自动答题统一使用你在「AI 聊天」里配置的接口。",
               "\u4E0B\u9762\u53EA\u5217\u51FA\u4E09\u9879\u5E38\u7528\u8BBE\u7F6E\uFF0C\u5176\u4F59\u5728\u300C\u9AD8\u7EA7\u8BBE\u7F6E\u300D\u91CC\uFF0C\u70B9\u5F00\u5373\u53EF\u8C03\u6574\u3002"
             ]).outerHTML
           },
@@ -280,7 +280,7 @@
         }
       }),
       workResults: new Script({
-        name: "\u641C\u7D22\u7ED3\u679C",
+        name: "答题结果",
         url: [["\u6240\u6709\u9875\u9762", /.*/]],
         namespace: "common.work-results",
         configs: {
@@ -622,7 +622,7 @@
           });
           const search = async (value) => {
             if (!OpenAIClient.isConfigured()) {
-              $modal("alert", { content: "请先在「通用 → AI 接口与聊天」配置 API 地址和模型名称。" });
+              $modal("alert", { content: "请先在「AI 聊天」配置 API 地址和模型名称。" });
               return;
             }
             content.replaceChildren(el("span", "\u641C\u7D22\u4E2D..."));

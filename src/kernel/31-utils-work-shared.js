@@ -26,7 +26,7 @@
     if (!OpenAIClient.isConfigured()) {
       onAIConfigMissing == null ? void 0 : onAIConfigMissing(opts);
       return $message("warn", {
-        content: "AI 接口尚未配置。请在「通用 → AI 接口与聊天」填写 API 地址和模型名称。",
+        content: "AI 接口尚未配置。请在「AI 聊天」填写 API 地址和模型名称。",
         duration: 0
       });
     } else {

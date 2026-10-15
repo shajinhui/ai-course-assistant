@@ -126,6 +126,9 @@ container-element.close { display: none; }
 container-element.minimize { min-width: unset; }
 container-element.minimize > .body,
 container-element.minimize > .footer { display: none; }
+container-element.minimize .primary-nav,
+container-element.minimize .platform-nav,
+container-element.minimize .extra-menu-bar { display: none; }
 container-element.minimize header-element { border-bottom-color: transparent; border-radius: 18px; }
 
 /* ============ 头部 ============ */
@@ -186,6 +189,40 @@ header-element .switch:hover,
 header-element .theme-toggle:hover { background: var(--ocs-tint); color: var(--ocs-a1); }
 header-element .switch svg { width: 16px; height: 16px; fill: currentColor; }
 .extra-menu-bar { display: none; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* ============ 常用导航与高级工具 ============ */
+.header-layout { width: 100%; min-width: 0; }
+.header-toolbar { display: flex; align-items: center; gap: 4px; }
+.header-toolbar .theme-toggle { margin-left: 0; flex: none; }
+.header-toolbar .switch { flex: none; }
+.primary-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 10px; }
+.nav-item, .tool-item {
+  box-sizing: border-box;
+  border: 0;
+  font: inherit;
+  font-size: 0.92em;
+  line-height: 1.5;
+  background: transparent;
+  color: var(--ocs-muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+.nav-item { padding: 7px 8px; border-radius: 9px; white-space: nowrap; }
+.nav-item:hover, .tool-item:hover { background: var(--ocs-tint); color: var(--ocs-a1); }
+.nav-item.active { background: var(--ocs-grad); color: var(--ocs-on-accent); font-weight: 700; }
+.nav-item:focus-visible, .tool-item:focus-visible, .advanced-tools > summary:focus-visible { outline: 2px solid var(--ocs-a1); outline-offset: 2px; }
+.platform-nav { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding-top: 9px; margin-top: 9px; border-top: 1px solid var(--ocs-border); }
+.platform-label { color: var(--ocs-muted); font-size: 0.82em; margin-right: 4px; }
+.platform-nav .nav-item { padding: 5px 8px; }
+.advanced-tools { position: relative; margin-left: auto; }
+.advanced-tools > summary { padding: 4px 8px; border-radius: 8px; color: var(--ocs-muted); font-size: 0.85em; cursor: pointer; list-style: none; }
+.advanced-tools > summary::-webkit-details-marker { display: none; }
+.advanced-tools > summary::after { content: "⌄"; margin-left: 4px; }
+.advanced-tools[open] > summary, .advanced-tools.active > summary { background: var(--ocs-tint); color: var(--ocs-a1); }
+.tools-content { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; width: max-content; min-width: 170px; max-width: min(280px, calc(100vw - 48px)); max-height: 45vh; overflow: auto; padding: 6px; border: 1px solid var(--ocs-border); border-radius: 12px; background: var(--ocs-surface); box-shadow: var(--ocs-shadow); }
+.advanced-tools:not([open]) > .tools-content { display: none; }
+.tool-item { display: block; width: 100%; padding: 7px 10px; border-radius: 7px; text-align: left; }
+.tool-item.active { background: var(--ocs-tint); color: var(--ocs-a1); font-weight: 700; }
 
 /* ============ 导航下拉 ============ */
 .dropdown { display: inline-block; position: relative; margin-right: 2px; }
