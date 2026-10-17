@@ -2,7 +2,7 @@
 
 版本 2.44.3。小肥鱼AI 是使用用户自填 OpenAI 兼容接口的油猴脚本，聊天、搜题、作业考试与视频弹题都以该接口为唯一作答来源。
 
-完整图文教程见 [详细使用教程（单文件 HTML）](docs/tutorial.html)，也可[从 Release 下载教程](https://github.com/shajinhui/ai-course-assistant/releases/latest/download/tutorial.html)。下载后用浏览器打开，可离线阅读，包含安装、API 配置、菜单导览、平台操作和可搜索的故障排查，并支持打印或保存为 PDF。
+完整图文教程可[在线阅读](https://xiaofeiyu-ai-guide.fanxiaogao05.workers.dev/)，也可查看仓库内的[详细使用教程（单文件 HTML）](docs/tutorial.html)，或[从 Release 下载教程](https://github.com/shajinhui/ai-course-assistant/releases/latest/download/tutorial.html)。下载后用浏览器打开，可离线阅读，包含安装、API 配置、菜单导览、平台操作和可搜索的故障排查，并支持打印或保存为 PDF。
 
 主导航固定为 **AI 聊天、在线搜题、答题结果、设置**。平台操作只显示当前页面及已登记 iframe 匹配的功能；首页、窗口、日志、配置同步和调试入口收进默认关闭的 **高级工具**。版本更新入口直接打开 GitHub Release，旧的检查更新面板不再出现在菜单中。旧版 AI 接口配置与面板选中记录继续兼容。
 
@@ -51,6 +51,29 @@ git push origin v2.44.1
 ```
 
 功能修改涉及的其他源码也应一同提交。标签必须与脚本版本一致，例如 `@version 2.44.1` 对应 `v2.44.1`，不一致时发布会中止。脚本的 `@updateURL` 与 `@downloadURL` 指向本仓库最新 Release，安装后可由油猴检查后续版本。
+
+## 教程网站部署到 Cloudflare
+
+教程使用 Cloudflare Workers Static Assets 托管，Worker 名称为 `xiaofeiyu-ai-guide`。网站首页来源是 `docs/tutorial.html`；`tools/build-site.mjs` 只将教程及 `site/_headers` 复制到 `dist/site/`，Wrangler 上传这个目录。`/tutorial.html` 提供 HTML 文件下载。
+
+```sh
+pnpm install --frozen-lockfile
+pnpm exec wrangler login    # 已登录时可跳过
+pnpm run site:dev           # 本机预览
+pnpm run site:deploy        # 自动构建教程并发布
+```
+
+首次部署会提供 `workers.dev` 地址。绑定自定义域名时，在 `wrangler.jsonc` 顶层增加以下配置，将示例替换成自己的完整域名后再次执行 `pnpm run site:deploy`：
+
+```json
+"routes": [
+  { "pattern": "ai.example.com", "custom_domain": true }
+]
+```
+
+域名所在的 Zone 需要已在当前 Cloudflare 账号中激活；目标主机名应未被其他站点占用。Cloudflare 会为 Custom Domain 创建 DNS 记录并签发 HTTPS 证书，详见[官方自定义域名说明](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
+
+更新教程后，执行 `pnpm run site:deploy` 即可发布新版。当前通过本机 Wrangler 登录部署；GitHub Actions 会构建并检查项目，尚未配置自动部署到 Cloudflare。
 
 ## 源码结构
 

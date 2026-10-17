@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "xiaofeiyu-ai-guide",
+  "compatibility_date": "2026-10-17",
+  "workers_dev": true,
+  "preview_urls": false,
+  "build": {
+    "command": "pnpm run site:build",
+    "watch_dir": ["docs/tutorial.html", "site"]
+  },
+  "assets": {
+    "directory": "./dist/site",
+    "not_found_handling": "none"
+  }
+}

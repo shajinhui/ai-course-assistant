@@ -26,6 +26,7 @@ jobs:
       - run: pnpm run check
       - run: pnpm test
       - run: pnpm run package
+      - run: pnpm run site:build
       - uses: actions/upload-artifact@v7
         with:
           name: ai-course-assistant
