@@ -1,14 +1,12 @@
 // ==UserScript==
 // @name         小肥鱼AI
-// @version      2.44.2
+// @version      2.44.3
 // @homepageURL  https://github.com/shajinhui/ai-course-assistant
 // @supportURL   https://github.com/shajinhui/ai-course-assistant/issues
 // @updateURL    https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.meta.js
 // @downloadURL  https://github.com/shajinhui/ai-course-assistant/releases/latest/download/ai-course-assistant.user.js
 // @description  用户自定义 API 地址、Key 和模型，聊天、搜题与自动答题仅使用 AI，保留原有网课辅助功能。界面为石墨灰极简配色，设置项按常用与高级分组。
-// @author       棚子
-// @note         会员单：@小李 @不会服输的 @小日 @逆熵学园 @我有一个梦想
-// @author     				pengziAI
+// @author       shajinhui
 // @license    				MIT
 // @match      				*://*.zhihuishu.com/*
 // @match      				*://*.chaoxing.com/*
