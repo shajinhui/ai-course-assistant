@@ -2,6 +2,8 @@
 
 版本 2.44.3。小肥鱼AI 是使用用户自填 OpenAI 兼容接口的油猴脚本，聊天、搜题、作业考试与视频弹题都以该接口为唯一作答来源。
 
+完整图文教程见 [详细使用教程（单文件 HTML）](docs/tutorial.html)，也可[从 Release 下载教程](https://github.com/shajinhui/ai-course-assistant/releases/latest/download/tutorial.html)。下载后用浏览器打开，可离线阅读，包含安装、API 配置、菜单导览、平台操作和可搜索的故障排查，并支持打印或保存为 PDF。
+
 主导航固定为 **AI 聊天、在线搜题、答题结果、设置**。平台操作只显示当前页面及已登记 iframe 匹配的功能；首页、窗口、日志、配置同步和调试入口收进默认关闭的 **高级工具**。版本更新入口直接打开 GitHub Release，旧的检查更新面板不再出现在菜单中。旧版 AI 接口配置与面板选中记录继续兼容。
 
 仓库中有两份等价构建产物：`xxx.js` 供调试，`xxx.user.js` 可直接安装。**它们由 `src/` 源码树构建生成，请勿直接编辑。**
@@ -32,7 +34,7 @@ API Key 在用户安装后填写，不写入源码或发布包。`node_modules/`
 
 ### GitHub 自动发布
 
-推送 `main` 或创建 Pull Request 时，GitHub Actions 会安装锁定依赖、检查构建、运行测试，并上传打包产物到该次运行的 Artifacts。推送 `v*` 标签且检查通过后，会自动创建 Release 并附上这三个文件。工作流也支持在 Actions 页面手动运行构建。
+推送 `main` 或创建 Pull Request 时，GitHub Actions 会安装锁定依赖、检查构建、运行测试，并上传打包产物到该次运行的 Artifacts。推送 `v*` 标签且检查通过后，会自动创建 Release 并附上这三个发布文件及 HTML 使用教程。工作流也支持在 Actions 页面手动运行构建。
 
 发布新版本时，修改 `src/meta/userscript-header.txt` 中的 `@version`，例如 `2.44.1`，然后：
 

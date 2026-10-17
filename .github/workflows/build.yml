@@ -56,4 +56,5 @@ jobs:
           dist/ai-course-assistant.user.js
           dist/ai-course-assistant.meta.js
           dist/SHA256SUMS
+          docs/tutorial.html
           --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
