@@ -4,6 +4,12 @@
   "compatibility_date": "2026-10-17",
   "workers_dev": true,
   "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "xiaofeiyu.fanxiaogao05.dpdns.org",
+      "custom_domain": true
+    }
+  ],
   "build": {
     "command": "pnpm run site:build",
     "watch_dir": ["docs/tutorial.html", "site"]
